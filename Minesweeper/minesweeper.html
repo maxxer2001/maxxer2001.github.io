@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minesweeper</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(10, 30px);
+      gap: 1px;
+      border: 1px solid #333;
+      background-color: #999;
+    }
+
+    .cell {
+      width: 30px;
+      height: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #ccc;
+    }
+
+    .mine {
+      background-color: #f00;
+    }
+
+    .flag {
+      background-color: #0f0;
+    }
+  </style>
+</head>
+<body>
+
+<div id="board"></div>
+
+<script>
+  const rows = 10;
+  const cols = 10;
+  const totalMines = 15;
+
+  let board = [];
+  let mines = [];
+
+  function initializeBoard() {
+    // Initialize the board
+    for (let i = 0; i < rows; i++) {
+      board[i] = [];
+      for (let j = 0; j < cols; j++) {
+        board[i][j] = { isOpen: false, isMine: false, isFlagged: false, count: 0 };
+      }
+    }
+
+    // Place mines randomly
+    let placedMines = 0;
+    while (placedMines < totalMines) {
+      const row = Math.floor(Math.random() * rows);
+      const col = Math.floor(Math.random() * cols);
+
+      if (!board[row][col].isMine) {
+        board[row][col].isMine = true;
+        placedMines++;
+        mines.push({ row, col });
+      }
+    }
+
+    // Calculate neighboring mine counts
+    for (let mine of mines) {
+      const { row, col } = mine;
+      for (let i = Math.max(0, row - 1); i <= Math.min(rows - 1, row + 1); i++) {
+        for (let j = Math.max(0, col - 1); j <= Math.min(cols - 1, col + 1); j++) {
+          if (!board[i][j].isMine) {
+            board[i][j].count++;
+          }
+        }
+      }
+    }
+  }
+
+  function renderBoard() {
+    const boardElement = document.getElementById('board');
+    boardElement.innerHTML = '';
+
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        if (board[i][j].isOpen) {
+          cell.textContent = board[i][j].isMine ? '💣' : board[i][j].count || '';
+          cell.classList.add(board[i][j].isMine ? 'mine' : 'opened');
+        } else if (board[i][j].isFlagged) {
+          cell.textContent = '🚩';
+          cell.classList.add('flag');
+        }
+
+        cell.addEventListener('click', () => openCell(i, j));
+        cell.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          toggleFlag(i, j);
+        });
+
+        boardElement.appendChild(cell);
+      }
+    }
+  }
+
+  function openCell(row, col) {
+    if (board[row][col].isOpen || board[row][col].isFlagged) {
+      return;
+    }
+
+    board[row][col].isOpen = true;
+
+    if (board[row][col].isMine) {
+      alert('Game Over! You hit a mine.');
+      resetGame();
+    } else if (board[row][col].count === 0) {
+      // Open neighboring cells if the clicked cell has no neighboring mines
+      for (let i = Math.max(0, row - 1); i <= Math.min(rows - 1, row + 1); i++) {
+        for (let j = Math.max(0, col - 1); j <= Math.min(cols - 1, col + 1); j++) {
+          openCell(i, j);
+        }
+      }
+    }
+
+    renderBoard();
+  }
+
+  function toggleFlag(row, col) {
+    if (board[row][col].isOpen) {
+      return;
+    }
+
+    board[row][col].isFlagged = !board[row][col].isFlagged;
+    renderBoard();
+  }
+
+  function resetGame() {
+    board = [];
+    mines = [];
+    initializeBoard();
+    renderBoard();
+  }
+
+  initializeBoard();
+  renderBoard();
+</script>
+
+</body>
+</html>
